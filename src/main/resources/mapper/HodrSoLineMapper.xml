@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hand.order.infra.mapper.HodrSoLineMapper">
+    <resultMap id="getItemListResultMap" type="com.hand.order.domain.entity.GetItemListResult">
+        <result column="so_line_id" property="soLineId"/>
+        <result column="item_id" property="itemId"/>
+        <result column="item_code" property="itemCode"/>
+        <result column="item_uom" property="itemUom"/>
+        <result column="item_description" property="itemDescription"/>
+        <result column="description" property="description"/>
+        <result column="order_quality" property="orderQuality"/>
+        <result column="unit_selling_price" property="unitSellingPrice"/>
+        <result column="order_price" property="orderPrice"/>
+        <result column="object_version_number" property="objectVersionNumber"/>
+    </resultMap>
+    <resultMap id="getLineListResultMap" type="com.hand.order.domain.entity.GetLineListResult">
+        <result column="so_header_id" property="soHeaderId"/>
+        <result column="item_code" property="itemCode"/>
+        <result column="item_description" property="itemDescription"/>
+        <result column="order_quality_uom" property="orderQualityUom"/>
+        <result column="order_quality" property="orderQuality"/>
+        <result column="unit_selling_price" property="unitSellingPrice"/>
+        <result column="order_price" property="orderPrice"/>
+        <result column="addition1" property="addition1"/>
+        <result column="addition2" property="addition2"/>
+        <result column="addition3" property="addition3"/>
+        <result column="addition4" property="addition4"/>
+        <result column="addition5" property="addition5"/>
+    </resultMap>
+    <delete id="deleteBySoLineId">
+         delete from hodr_so_line where so_line_id = #{soLineId}
+    </delete>
+    <select id="getLineList" resultType="com.hand.order.domain.entity.HodrSoHeader" resultMap="getLineListResultMap">
+        <bind name="lang" value="@io.choerodon.mybatis.helper.LanguageHelper@language()"/>
+        select
+        hsh.so_header_id,
+        item_code,
+        item_description,
+        order_quality_uom,
+        order_quality,
+        unit_selling_price,
+        order_quality * unit_selling_price as order_price,
+        addition1,
+        addition2,
+        addition3,
+        addition4,
+        addition5
+        from hodr_so_header hsh
+            join hodr_customer hct on hsh.customer_id = hct.customer_id
+            join hodr_company hcp on hsh.company_id = hcp.company_id
+            join hodr_so_line hsl on hsh.so_header_id = hsl.so_header_id
+            join hodr_item hi on hsl.item_id = hi.item_id
+        <where>
+            <if test="orderNumber != null and orderNumber != ''">
+                and hsh.order_number = #{orderNumber}
+            </if>
+            <if test="orderDate != null and orderDate != ''">
+                and hsh.order_date = #{orderDate}
+            </if>
+            <if test="companyName != null and companyName != ''">
+                and company_name = #{companyName}
+            </if>
+            <if test="customerName != null and customerName != ''">
+                and customer_name = #{customerName}
+            </if>
+        </where>
+    </select>
+
+    <select id="getLineCount" resultType="java.lang.Long">
+        select count(*) from hodr_so_line;
+    </select>
+
+    <select id="getItemList" resultMap="getItemListResultMap">
+        select
+        hsl.so_line_id,
+        hsl.item_id,
+        item_code,
+        item_uom,
+        item_description,
+        hsl.description,
+        hsl.order_quality,
+        unit_selling_price,
+        hsl.order_quality * unit_selling_price as order_price,
+        hsl.object_version_number
+        from hodr_so_header hsh
+        join hodr_so_line hsl on hsh.so_header_id = hsl.so_header_id
+        join hodr_item ht on hsl.item_id = ht.item_id
+        where hsh.so_header_id = #{soHeaderId}
+    </select>
+
+    <delete id="deleteBySoHeaderId">
+        delete from hodr_so_line where so_line_id = #{soHeaderId}
+    </delete>
+
+</mapper>

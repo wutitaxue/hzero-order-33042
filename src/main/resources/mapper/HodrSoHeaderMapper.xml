@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hand.order.infra.mapper.HodrSoHeaderMapper">
+
+    <resultMap id="getHeadListResultMap" type="com.hand.order.domain.entity.GetHeadListResult">
+        <result column="so_header_id" property="soHeaderId"/>
+        <result column="order_number" property="orderNumber"/>
+        <result column="company_name" property="companyName"/>
+        <result column="order_date" property="orderDate"/>
+        <result column="order_status" property="orderStatus"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="order_price" property="orderPrice"/>
+    </resultMap>
+
+    <select id="selectHeader" resultType="com.hand.order.domain.entity.HodrSoHeader">
+        <bind name="lang" value="@io.choerodon.mybatis.helper.LanguageHelper@language()"/>
+        select
+        hsh.order_number,
+        hsh.company_id,
+        hsh.order_date,
+        hsh.order_status,
+        hsh.customer_id
+        from hodr_so_header hsh
+        where hsh.so_header_id = #{soHeaderId}
+    </select>
+
+    <select id="getHeadList" resultType="com.hand.order.domain.entity.HodrSoHeader" resultMap="getHeadListResultMap">
+        <bind name="lang" value="@io.choerodon.mybatis.helper.LanguageHelper@language()"/>
+        select
+        hsh.so_header_id,
+        hsh.order_number,
+        company_name,
+        hsh.order_date,
+        hsh.order_status,
+        hsh.customer_id,
+        customer_name,
+        hsh.company_id,
+        sum(order_quality * unit_selling_price) as order_price,
+        hsh.object_version_number
+        from hodr_so_header hsh
+            left join hodr_customer hct on hsh.customer_id = hct.customer_id
+            left join hodr_company hcp on hsh.company_id = hcp.company_id
+            left join hodr_so_line hsl on hsh.so_header_id = hsl.so_header_id
+        <where>
+            <if test="soHeaderId != null and soHeaderId != ''">
+                and hsh.so_header_id = #{soHeaderId}
+            </if>
+            <if test="companyId != null and companyId != ''">
+                and hsh.company_id = #{companyId}
+            </if>
+            <if test="customerId != null and customerId != ''">
+                and hsh.customer_id = #{customerId}
+            </if>
+            <if test="orderNumber != null and orderNumber != ''">
+                and order_number LIKE "%"#{orderNumber}"%"
+            </if>
+            <if test="orderStatus != null and orderStatus != ''">
+                and order_status = #{orderStatus}
+            </if>
+        </where>
+        group by hsh.so_header_id
+    </select>
+
+    <select id="getHeaderCount" resultType="java.lang.Long">
+        select count(*) from hodr_so_header;
+    </select>
+
+    <insert id="insertHeaderOrder" useGeneratedKeys = "true" parameterType="com.hand.order.domain.entity.HodrSoHeader">
+        insert into hodr_so_header(so_header_id, order_number, company_id, order_date, order_status, customer_id)
+        values (#{soHeaderId}, #{orderNumber}, #{companyId}, #{orderDate}, #{orderStatus}, #{customerId})
+    </insert>
+
+    <update id="updateStatus">
+        update hodr_so_header
+        set order_status = 'CLOSED'
+        where order_status = 'APPROVED'
+    </update>
+
+</mapper>
